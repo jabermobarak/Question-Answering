@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Answering System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            background: linear-gradient(to bottom, #3a1c71, #000);
+            transition: background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            color: white; /* Set default text color to white */
+        }
+    
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+    
+        .output-box {
+            padding: 10px;
+            border: 1px solid #565656; /* Outline border */
+            border-radius: 10px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.2); /* Reduced opacity */
+            width: 90%; /* Adjust as needed */
+            max-width: 750px; /* Adjust as needed */
+            margin: 20px auto; /* Center horizontally and leave more space below */
+            height: calc(100vh - 300px); /* Adjust height as needed */
+            position: relative; /* Added */
+            position: relative;
+        }
+        
+        .white-text {
+            color: white; /* Set text color to white */
+        }
+    
+        .output-message {
+            padding: 10px;
+            
+            font-size: 1.8vh;
+            animation: fadeIn 0.5s ease; /* Animation */
+        }
+    
+        .clear-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.1vw;
+            color: white;
+            cursor: pointer;
+        }
+    
+        @keyframes fadeInText {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    
+        .input-container {
+            position: fixed;
+            bottom: 3%; /* Adjust spacing between input and output */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%; /* Adjust as needed */
+            max-width: 90vw; /* Adjust as needed */
+            color: #757575; /* Grey text color */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center align items horizontally */
+        }
+    
+        .input-field {
+            position: relative;
+            width: 60%; /* Take up full width */
+            margin-bottom: 10px; /* Add margin bottom */
+        }
+    
+        .input-box {
+            width: calc(100% - 40px); /* Take up remaining space */
+            padding: 15px; /* Increased padding */
+            border: 1px solid #ccc; /* Grey border */
+            border-radius: 25px; /* Increased border radius */
+            font-size: 16px; /* Change font size for better readability */
+            outline: none;
+            background-color: transparent; /* Transparent background */
+            color: white; /* Text color */
+        }
+    
+        .send-button {
+            padding: 15px 25px;
+            color: white;
+            border: none;
+            background-color: #3a1c71; /* Purple background */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            outline: none; /* Remove outline */
+            width: 60%; /* Take up full width */
+            border-radius: 25px; /* Rounded corners */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    
+        .send-button:hover {
+            background-color: #29013c; /* Darker purple background on hover */
+        }
+    
+        .send-icon {
+            font-size: 20px;
+            margin-right: 10px; /* Add margin between icon and text */
+        }
+    
+        .input-sentence {
+            font-size: 14px; /* Change font size for better readability */
+            margin-top: 5px; /* Add margin on top */
+        }
+    
+        .terms-link {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="output-box">
+            <i class="clear-icon fas fa-trash" onclick="clearOutput()"></i>
+            <div class="output-message">Welcome to the Question Answering System!</div>
+            <div id="outputContent"></div>
+        </div>
+    </div>
+
+    <div class="input-container">
+        <div class="input-field">
+            <input type="text" id="contextInput" class="input-box" placeholder="Enter context...">
+        </div>
+        <div class="input-field">
+            <input type="text" id="questionInput" class="input-box" placeholder="Enter your question...">
+        </div>
+        <button class="send-button" id="sendButton"><i class="send-icon fas fa-paper-plane"></i></button>
+        <div class="input-sentence" style="margin-top: 1%;">Developed By Jaber Mobarak</div>
+    </div>
+
+    <script>
+        document.getElementById('questionInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendQuestion();
+            }
+        });
+
+        document.getElementById('sendButton').addEventListener('click', function () {
+            sendQuestion();
+        });
+
+        function sendQuestion() {
+            var context = document.getElementById('contextInput').value.trim();
+            var question = document.getElementById('questionInput').value.trim();
+            if (question === '') return;
+            appendMessage(question, true);
+            document.getElementById('questionInput').value = '';
+            scrollToBottom();
+            // Send the context and question to the server for processing and get the response
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ context: context, question: question }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                var answer = data.answer || 'Sorry, I could not find an answer.';
+                appendMessage(answer, false);
+                scrollToBottom();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function appendMessage(message, isUser) {
+            var outputContent = document.getElementById('outputContent');
+            var messageElement = document.createElement('div');
+            messageElement.className = 'output-message';
+            messageElement.textContent = message;
+            if (isUser) {
+                messageElement.style.textAlign = 'right';
+            }
+            outputContent.appendChild(messageElement);
+        }
+
+        function scrollToBottom() {
+            var outputBox = document.querySelector('.output-box');
+            outputBox.scrollTop = outputBox.scrollHeight;
+        }
+
+        function clearOutput() {
+            var outputContent = document.getElementById('outputContent');
+            outputContent.innerHTML = ''; // Clearing the content
+        }
+    </script>
+</body>
+</html>
